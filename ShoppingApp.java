@@ -166,16 +166,17 @@ class Inventory {
     public void saveItems() {
         // write items to inventory.txt
 
-        for (ShopItem item : items) {
-            try {
-                File file = new File("inventory.txt");
-                FileWriter writer = new FileWriter("inventory.txt");
+        try {
+            File file = new File("inventory.txt");
+            FileWriter writer = new FileWriter("inventory.txt");
+            for (ShopItem item : items) {
                 writer.write(item.getName() + ":" + item.getDescription() + ":" + item.getImage());
                 writer.write("\n");
-            } catch (IOException e) {
-                System.out.println("An error occurred while writing item: " + item);
-                e.printStackTrace();
+                System.out.println(item);
             }
+        } catch (IOException e) {
+            System.out.println("An error occurred while writing items to inventory.txt.");
+            e.printStackTrace();
         }
     }
     
