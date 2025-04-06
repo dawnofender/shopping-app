@@ -73,18 +73,18 @@ class ImagePanel extends JPanel {
 class ShopItem {
     private String name;
     private String description;
-    private String imagePath;
+    private ImagePanel image;
     
     public ShopItem(String n, String d, String i) { 
         this.name = n;
         this.description = d;
-        this.imagePath = i;
+        this.image = new ImagePanel(i);
     }
 
     public ShopItem(ShopItem source) {
         this.name = source.name;
         this.description = source.description;
-        this.imagePath = source.imagePath;
+        this.image = source.image;
     }
     
     public String getName() {
@@ -95,8 +95,8 @@ class ShopItem {
         return(this.description);
     }
 
-    public String getImagePath() {
-        return(this.imagePath);
+    public ImagePanel getImage() {
+        return(this.image);
     }
 
     @Override
@@ -144,7 +144,7 @@ class Inventory {
         items.remove(item);
     }
 
-    private void loadItems() {
+    public void loadItems() {
         // read items from inventory.txt
         try {
             File file = new File("inventory.txt");
@@ -153,6 +153,7 @@ class Inventory {
                 String data = myReader.nextLine();
                 String[] parts = data.split(":");
                 addItem(new ShopItem(parts[0], parts[1], parts[2]));
+                System.out.println(data);
             }
             myReader.close();
         } catch (FileNotFoundException e) {
@@ -162,14 +163,14 @@ class Inventory {
     }
 
 
-    private void saveItems() {
+    public void saveItems() {
         // write items to inventory.txt
 
         for (ShopItem item : items) {
             try {
                 File file = new File("inventory.txt");
                 FileWriter writer = new FileWriter("inventory.txt");
-                writer.write(item.getName() + ":" + item.getDescription() + ":" + item.getImagePath());
+                writer.write(item.getName() + ":" + item.getDescription() + ":" + item.getImage());
                 writer.write("\n");
             } catch (IOException e) {
                 System.out.println("An error occurred while writing item: " + item);
@@ -291,6 +292,23 @@ class ActionSearch implements ActionListener {
     }
 }
 
+
+class ActionAddItem implements ActionListener {
+    
+    private SearchUI searchUI;
+    
+    public ActionAddItem(SearchUI s) {
+        this.searchUI = s;
+    }
+
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        searchUI.sendToInventory();
+        searchUI.updateResults();
+    }
+}
+
 class ActionRemoveItem implements ActionListener {
     private Inventory inventory;
     private ShopItem item;
@@ -310,8 +328,39 @@ class ActionRemoveItem implements ActionListener {
     }
 }
 
+class ActionSave implements ActionListener {
+    private Inventory inventory;
+
+    public ActionSave(Inventory inventory) {
+        this.inventory = inventory;
+    }
+
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        inventory.saveItems();
+    }
+}
+
+class ActionLoad implements ActionListener {
+    private Inventory inventory;
+
+    public ActionLoad(Inventory inventory) {
+        this.inventory = inventory;
+    }
+
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        inventory.loadItems();
+    }
+}
+
 public class SearchUI extends JFrame {
     private JTextField searchField = new JTextField(20);
+    private JTextField nameField = new JTextField(20);
+    private JTextField descriptionField = new JTextField(20);
+    private JTextField imagePathField = new JTextField(20);
     private JButton searchButton = new JButton("Search");  
     private JPanel resultsPanel = new JPanel();
     private Inventory inventory;
@@ -323,35 +372,63 @@ public class SearchUI extends JFrame {
     }
 
     private void setup() {
-        
-
-        Color bgColour = new Color(20, 200, 180); 
+        Color bgColour = new Color(191, 191, 191); 
         this.getContentPane().setBackground(bgColour);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.setLayout(null); 
 
         //search area
         JLabel inventoryTitle = new JLabel(inventory.getName());
-        inventoryTitle.setBounds(50, 50, 200, 30);
+        inventoryTitle.setBounds(64, 128-32, 256, 32);
         this.add(inventoryTitle);
 
-        searchField.setBounds(50, 100, 200, 30);
+        searchField.setBounds(64, 128, 256, 32);
         this.add(searchField);
 
         JButton searchButton = new JButton("Search");
-        searchButton.setBounds(50, 150, 200, 30);
+        searchButton.setBounds(64, 128+32, 256, 32);
         this.add(searchButton);
         searchButton.addActionListener(new ActionSearch(this));
 
+        // Inventory management (left side)
+        JButton saveButton = new JButton("Save");
+        JButton loadButton = new JButton("Load");
+        saveButton.setBounds(384, 64, 96, 32);
+        loadButton.setBounds(544, 64, 96, 32);
+        this.add(saveButton);
+        this.add(loadButton);
+        saveButton.addActionListener(new ActionSave(inventory));
+        loadButton.addActionListener(new ActionLoad(inventory));
+        
+        JLabel info = new JLabel("name, description, image path");
+        info.setBounds(384, 128-32, 256, 32);
+        this.add(info);
+        
+        nameField.setBounds(        384, 128,    256, 32);
+        descriptionField.setBounds( 384, 128+32, 256, 32);
+        imagePathField.setBounds(   384, 128+64, 256, 32);
+        this.add(nameField);
+        this.add(descriptionField);
+        this.add(imagePathField);
+
         JButton addButton = new JButton("Add");
-        addButton.setBounds(50, 150, 50, 30);
+        addButton.setBounds(384, 128+96, 256, 32);
         this.add(addButton);
+        addButton.addActionListener(new ActionAddItem(this));
+        this.add(searchField);
         
         resultsPanel.setBounds(64, 256, 256, 256);
         resultsPanel.setLayout(null);
         this.add(resultsPanel);
 
         this.setVisible(true);
+    }
+
+    public void sendToInventory() {
+        String name = nameField.getText();
+        String desc = descriptionField.getText();
+        String path = imagePathField.getText();
+        inventory.addItem(new ShopItem(name, desc, path));
     }
 
 
@@ -365,8 +442,9 @@ public class SearchUI extends JFrame {
         int itemHeight = 64;
         int itemWidth = 256;
         int imageSize = 64;
-        int textWidth = 128;
+        int textWidth = 160;
         int textHeight = 16;
+        int buttonWidth = 92;
 
         int margins = 8;
         int itemOffset = 0;
@@ -382,7 +460,7 @@ public class SearchUI extends JFrame {
             itemPanel.setLayout(null);
             itemOffset += itemHeight;
 
-            ImagePanel iImage = new ImagePanel(item.getImagePath());
+            ImagePanel iImage = item.getImage();
             iImage.setWidth(imageSize);
             iImage.setHeight(imageSize);
             iImage.setBounds(
@@ -415,7 +493,7 @@ public class SearchUI extends JFrame {
             removeButton.setBounds(
                 imageSize + margins*2,
                 textHeight*2 + margins*2,
-                imageSize,
+                buttonWidth,
                 textHeight
             );
             removeButton.addActionListener(new ActionRemoveItem(this, inventory, item));
